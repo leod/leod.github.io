@@ -53,7 +53,9 @@ consist of output variable declarations, a body, and a list of output expression
 additionally has input declarations for varying variables coming from the vertex shader. This
 decomposed form allows successive transformations to be applied to shaders.
 
-Before we can look at an example, we need to define the data that flows into the shader:
+Before we can look at an example
+(full code: [`examples/shader.rs`](https://github.com/leod/rendology/blob/master/examples/shader.rs)),
+we need to define the data that flows into the shader:
 ```rust
 use nalgebra as na;
 
@@ -170,8 +172,8 @@ is the mesh's vertex type. `drawable` holds instances as well as the mesh that i
 There is a certain order of operations that must be respected when drawing a frame. Consider for
 example the case of using shadow mapping and deferred shading. A typical frame may look like this:
 1. Clear buffers.
-2. Draw the scene from the light's perspective, creating a shadow texture.
-3. Draw the scene from the camera's perspective, creating albedo and normal textures.
+2. Draw scene from the main light's perspective, creating a shadow texture.
+3. Draw scene from the camera's perspective, creating albedo and normal textures.
 4. Calculate light in another texture by making use of the normal texture.
 5. Compose by multiplying light and albedo texture.
 6. Draw plain and/or translucent objects.
@@ -183,6 +185,36 @@ a series of types that represent a finite-state automaton. Each operation takes 
 returns an instance of a type with the legal follow-up operations. Furthermore, the types are
 annotated with `#[must_use]`. Taken together, these definitions ensure that whenever you start a
 frame, you will follow a path through the automaton until the result is presented to the user.
+
+Finally, as an example, this is the general idea of what drawing a frame looks like with the
+Rendology pipeline:
+```rust
+self.rendology
+    .start_frame(facade, (0.0, 0.0, 0.0), context.clone(), target)?
+    .shadow_pass()
+    .draw(
+        &self.my_shadow_pass,
+        &scene.my_cubes.as_drawable(&self.cube),
+        &my_params,
+        &Default::default(),
+    )?
+    .shaded_scene_pass()
+    .draw(
+        &self.scene_pass,
+        &scene.cubes.as_drawable(&self.cube),
+        &(),
+        &draw_params,
+    )?
+    .draw(
+        &self.my_scene_pass,
+        &scene.my_cubes.as_drawable(&self.cube),
+        &my_params,
+        &Default::default(),
+    )?
+    .compose(&scene.lights)?
+    .postprocess()?
+    .present()
+```
 
 # Appendix
 The following diagram shows the paths that are currently possible when drawing a frame:
