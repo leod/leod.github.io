@@ -1,0 +1,35 @@
+digraph rendology_pipeline {
+    pipe [label="rendology::Pipeline"];
+    start [label="StartFrameStep"];
+    shadow [label="ShadowPassStep"];
+    shaded [label="ShadedScenePassStep"];
+    after_compose [label="AfterComposeStep"];
+    plain [label="PlainScenePassStep"];
+    after_pp [label="AfterPostprocessStep"];
+    plain_after_pp [label="PlainScenePassAfterPostprocessStep"];
+    end [label="()"];
+
+    pipe -> start [label="start_frame"];
+    
+    start -> shadow
+    start -> shaded
+    start -> plain
+
+    shadow -> shadow [label="draw"];
+    shadow -> shaded
+
+    shaded -> shaded [label="draw"];
+    shaded -> after_compose [label="compose"];
+
+    after_compose -> plain
+    after_compose -> after_pp [label="postprocess"];
+
+    plain -> plain [label="draw"];
+    plain -> after_pp [label="postprocess"];
+
+    after_pp -> end [label="present"];
+    after_pp -> plain_after_pp;
+
+    plain_after_pp -> plain_after_pp [label="draw"];
+    plain_after_pp -> end [label="present"];
+}
