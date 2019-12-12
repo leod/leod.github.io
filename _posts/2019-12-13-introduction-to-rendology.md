@@ -49,7 +49,7 @@ define data that has to be provided from the CPU side when drawing with the shad
 - `V` is per-vertex data.
 
 Rendology shader types store GLSL shaders in a decomposed form. Both vertex and fragment cores
-consist of output variable declarations, a body, and a list of output expression. The fragment core
+consist of output variable declarations, a body, and a list of output expressions. The fragment core
 additionally has input declarations for varying variables coming from the vertex shader. This
 decomposed form allows successive transformations to be applied to shaders.
 
