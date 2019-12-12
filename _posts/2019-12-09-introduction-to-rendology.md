@@ -179,10 +179,14 @@ example the case of using shadow mapping and deferred shading. A typical frame m
 
 Of course, there are many ways of messing up this order; for example, it would not make sense to
 create the shadow texture _after_ step five. Rendology enforces this order of operations by defining
-a series of types that represent a finite state automaton. Each operation takes `self` by-move and
+a series of types that represent a finite-state automaton. Each operation takes `self` by-move and
 returns an instance of a type with the legal follow-up operations. Furthermore, the types are
 annotated with `#[must_use]`. Taken together, these definitions ensure that whenever you start a
 frame, you will follow a path through the automaton until the result is presented to the user.
+
+# Appendix
+The following diagram shows the paths that are currently possible when drawing a frame:
+![drawing a frame](/assets/rendology_pipeline.png)
 
 # Footnotes
 [^1]: Glium's [shadow mapping example](https://github.com/glium/glium/blob/master/examples/shadow_mapping.rs) was of great help in this.
