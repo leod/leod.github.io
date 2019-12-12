@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Introduction to Rendology"
-date:   2019-12-09 13:05:53 +0100
+date:   2019-12-13 13:05:53 +0100
 categories: rust gamedev rendering rendology 0.4.0
 ---
 
