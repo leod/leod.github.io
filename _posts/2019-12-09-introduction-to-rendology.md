@@ -22,9 +22,9 @@ ready for general usage yet.
 Rendology was split off from my puzzle game project
 [_Ultimate Scale_](https://github.com/leod/ultimate-scale). When I started this project, I wanted
 to focus on the game concept --- certainly, I thought, drawing some plain cubes would more than
-suffice. Pretty soon, however, I got tired of looking at the graphics, so I implemented simple
-verions of shadow mapping[^1] and deferred shading[^2]. Later on, I added support for FXAA [^3] and
-a glow effect.
+suffice. Pretty soon, however, I got tired of looking at the graphics, so I inexplicably decided
+to implement simple versions of shadow mapping[^1] and deferred shading[^2]. Later on, I added
+support for FXAA [^3] and a glow effect.
 
 It was important to me to allow turning off each of the rendering effects separately, so that 
 development would be possible on my puny little laptop. Each combination of rendering effects needs 
@@ -120,7 +120,7 @@ fn diffuse_transform<I, V>(
             "
             float diffuse = max(
                 0.0,
-                dot(v_world_normal, light_pos - v_world_pos.xyz)
+                dot(v_world_normal, normalize(light_pos - v_world_pos.xyz))
             );
             "
         )
@@ -141,7 +141,48 @@ different kinds of shaders.
 While this is a simple example, the same principles are applied in the implementation of Rendology
 multiple times. A scene shader needs to be defined only once. Depending on the configuration of the
 pipeline, the shader then undergoes various transformations, by which support for shadow mapping, 
-deferred shading and other effects is added successively.
+deferred shading and other effects may be added successively.
+
+# Rendering Pipeline
+Rendology's pipeline ensures at compile time that the necessary data for running your scene shader
+is given when drawing. One only needs to implement the `SceneCore` trait for the scene shader.
+For a full example, see
+[`examples/custom_scene_core.rs`](https://github.com/leod/rendology/blob/master/examples/custom_scene_core.rs),
+where texturing is implemented. Then, it is possible to create shadow passes, shaded scene passes
+and plain scene passes for your `SceneCore` implementation. As an example, the pipeline's `draw` 
+function for a shaded scene pass is declared as follows:
+```rust
+pub fn draw<C, D, P>(
+    self,
+    pass: &ShadedScenePass<C>,
+    drawable: &D,
+    params: &P,
+    draw_params: &glium::DrawParameters,
+) -> Result<Self, DrawError>
+where
+    C: SceneCore,
+    D: Drawable<C::Instance, C::Vertex>,
+    P: shader::input::CompatibleWith<C::Params>,
+```
+Here, `C::Params` are the uniforms for `C`, `C::Instance` is the per-instance data and `C::Vertex`
+is the mesh's vertex type. `drawable` holds instances as well as the mesh that is to be drawn.
+
+There is a certain order of operations that must be respected when drawing a frame. Consider for
+example the case of using shadow mapping and deferred shading. A typical frame may look like this:
+1. Clear buffers.
+2. Draw the scene from the light's perspective, creating a shadow texture.
+3. Draw the scene from the camera's perspective, creating albedo and normal textures.
+4. Calculate light in another texture by making use of the normal texture.
+5. Compose by multiplying light and albedo texture.
+6. Draw plain and/or translucent objects.
+7. Apply postprocessing and present the frame.
+
+Of course, there are many ways of messing up this order; for example, it would not make sense to
+create the shadow texture _after_ step five. Rendology enforces this order of operations by defining
+a series of types that represent a finite state automaton. Each operation takes `self` by-move and
+returns an instance of a type with the legal follow-up operations. Furthermore, the types are
+annotated with `#[must_use]`. Taken together, these definitions ensure that whenever you start a
+frame, you will follow a path through the automaton until the result is presented to the user.
 
 # Footnotes
 [^1]: Glium's [shadow mapping example](https://github.com/glium/glium/blob/master/examples/shadow_mapping.rs) was of great help in this.
