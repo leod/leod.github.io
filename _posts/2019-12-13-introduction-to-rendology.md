@@ -2,8 +2,10 @@
 layout: post
 title:  "Introduction to Rendology"
 date:   2019-12-13 10:05:53 +0100
-categories: rust gamedev rendering rendology 0.4.0
+categories: rust gamedev rendology
 ---
+
+![Ultimate Scale screenshot](/assets/rendology_hdr_0_4.png)
 
 [_Rendology_](https://github.com/leod/rendology) is a 3D rendering pipeline based on
 [Glium](https://github.com/glium/glium) and written in Rust. It features basic implementations of
@@ -17,8 +19,6 @@ describe how they came to be this way.
 Note that this is written from the perspective of an amateur game developer, so take everything
 with two grains of salt. Also, please keep in mind that Rendology is unstable, undocumented and not 
 ready for general usage yet.
-
-![Ultimate Scale screenshot](/assets/rendology_hdr_0_4.png)
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/qOKUS2cwufg" frameborder="0" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen> </iframe>
 
