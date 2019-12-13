@@ -95,7 +95,7 @@ fn scene_core() -> shader::Core<Params, Instance, Vertex> {
         )
         .with_out(
             shader::defs::V_WORLD_NORMAL,
-            "normalize(normal_matrix * vertex_normal)",
+            "normal_matrix * vertex_normal",
         )
         .with_out(
             shader::defs::V_POS,
