@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Introduction to Rendology"
-date:   2019-12-13 13:05:53 +0100
+date:   2019-12-13 10:05:53 +0100
 categories: rust gamedev rendering rendology 0.4.0
 ---
 
@@ -17,6 +17,8 @@ describe how they came to be this way.
 Note that this is written from the perspective of an amateur game developer, so take everything
 with two grains of salt. Also, please keep in mind that Rendology is unstable, undocumented and not 
 ready for general usage yet.
+
+![Ultimate Scale screenshot](/assets/rendology_hdr_0_4.png)
 
 # Background
 Rendology was split off from my puzzle game project
