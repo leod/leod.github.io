@@ -14,11 +14,49 @@ categories: rust gamedev rendology
 [a glow effect](https://learnopengl.com/Advanced-Lighting/Bloom),
 [FXAA](https://en.wikipedia.org/wiki/Fast_approximate_anti-aliasing)
 and instanced rendering. In this blog post, I'll outline some of the concepts of Rendology and
-describe how they came to be this way. 
+describe how they came to be this way.
 
-Note that this is written from the perspective of an amateur game developer, so take everything
-with two grains of salt. Also, please keep in mind that Rendology is unstable, undocumented and not 
-ready for general usage yet.
+Rendology defines shaders in a decomposed fashion, which allows writing functions that successively
+_transform_ shaders. This addresses the problem that arises when allowing arbitrary combinations of
+the above effects as well as allowing users to implement custom scene shaders. Then, the pipeline
+guides users through drawing a frame by mimicking a finite-state automaton on the type level.
+Drawing a frame looks somewhat like this:
+```rust
+self.rendology
+    .start_frame(facade, (0.0, 0.0, 0.0), context.clone(), target)?
+    .shadow_pass()
+    .draw(
+        &self.my_shadow_pass,
+        &scene.my_cubes.as_drawable(&self.cube),
+        &my_params,
+        &Default::default(),
+    )?
+    .shaded_scene_pass()
+    .draw(
+        &self.scene_pass,
+        &scene.cubes.as_drawable(&self.cube),
+        &(),
+        &draw_params,
+    )?
+    .draw(
+        &self.my_scene_pass,
+        &scene.my_cubes.as_drawable(&self.cube),
+        &my_params,
+        &Default::default(),
+    )?
+    .compose(&scene.lights)?
+    .postprocess()?
+    .present();
+```
+See [examples/cube.rs](https://github.com/leod/rendology/blob/master/examples/cube.rs) for a more
+complete example.
+
+<blockquote class="warning" id="myid" title="my title">
+Note that this is written from the perspective of an amateur game developer, so take
+everything
+with two grains of salt. Also, please keep in mind that Rendology is unstable, undocumented and not
+ready for general usage yet. 
+</blockquote>
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/qOKUS2cwufg" frameborder="0" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen> </iframe>
 
@@ -41,7 +79,7 @@ but then it hit me: since the core of the shaders would be different, I would ne
 implement support for all of the combinations of rendering effects around that!
 
 Assumably, there are industry-proven solutions to this problem, but after some deliberation I came
-up with a somewhat overengineered (and yet hacky) method of successively _transforming_ shaders.
+up with a somewhat overengineered (and yet hacky) method of successively transforming shaders.
 This method later turned into the core of Rendology.
 
 # Shader Cores and their Transformations
@@ -139,12 +177,12 @@ fn diffuse_transform<I, V>(
 }
 ```
 The fragment shader is transformed such that it now takes `v_world_pos` and `v_world_normal` as
-varying input. The given vertex shader is left unmodified. Note that `diffuse_transform` is generic
-in the instance data `I` as well as the vertex data `V`; all that is required is that `Params` is
-given, so that we have access to `light_pos`. Thus, the same transformation can be applied to
-different kinds of shaders.
+varying input. As output, it scales the original `f_color` by the factor `diffuse`.  The given
+vertex shader is left unmodified. Note that `diffuse_transform` is generic in the instance data
+`I` as well as the vertex data `V`; all that is required is that `Params` is given, so that we have
+access to `light_pos`. Thus, the same transformation can be applied to different kinds of shaders.
 
-While this is a simple example, the same principles are applied in the implementation of Rendology
+While this is a simple case, the same principles are applied in the implementation of Rendology
 multiple times. A scene shader needs to be defined only once. Depending on the configuration of the
 pipeline, the shader then undergoes various transformations, by which support for shadow mapping, 
 deferred shading and other effects may be added successively.
@@ -155,8 +193,8 @@ is given when drawing. One only needs to implement the `SceneCore` trait for the
 For a full example, see
 [`examples/custom_scene_core.rs`](https://github.com/leod/rendology/blob/master/examples/custom_scene_core.rs),
 where texturing is implemented. Then, it is possible to create shadow passes, shaded scene passes
-and plain scene passes for your `SceneCore` implementation. As an example, the pipeline's `draw` 
-function for a shaded scene pass is declared as follows:
+and plain scene passes for your `SceneCore` implementation. The pipeline's `draw` function for a
+shaded scene pass is declared as follows:
 ```rust
 pub fn draw<C, D, P>(
     self,
@@ -173,8 +211,8 @@ where
 Here, `C::Params` are the uniforms for `C`, `C::Instance` is the per-instance data and `C::Vertex`
 is the mesh's vertex type. `drawable` holds instances as well as the mesh that is to be drawn.
 
-There is a certain order of operations that must be respected when drawing a frame. Consider for
-example the case of using shadow mapping and deferred shading. A typical frame may look like this:
+There is a certain order of operations that must be respected when drawing a frame. Consider the
+case of using shadow mapping and deferred shading. A typical frame may look like this:
 1. Clear buffers.
 2. Draw scene from the main light's perspective, creating a shadow texture.
 3. Draw scene from the camera's perspective, creating albedo and normal textures.
@@ -183,44 +221,12 @@ example the case of using shadow mapping and deferred shading. A typical frame m
 6. Draw plain and/or translucent objects.
 7. Apply postprocessing and present the frame.
 
-Of course, there are many ways of messing up this order; for example, it would not make sense to
+Of course, there are many ways of messing up this order; for instance, it would not make sense to
 create the shadow texture _after_ step five. Rendology enforces this order of operations by defining
 a series of types that represent a finite-state automaton. Each operation takes `self` by-move and
 returns an instance of a type with the legal follow-up operations. Furthermore, the types are
 annotated with `#[must_use]`. Taken together, these definitions ensure that whenever you start a
 frame, you will follow a path through the automaton until the result is presented to the user.
-
-Finally, as an example, this is the general idea of what drawing a frame looks like with the
-Rendology pipeline:
-```rust
-self.rendology
-    .start_frame(facade, (0.0, 0.0, 0.0), context.clone(), target)?
-    .shadow_pass()
-    .draw(
-        &self.my_shadow_pass,
-        &scene.my_cubes.as_drawable(&self.cube),
-        &my_params,
-        &Default::default(),
-    )?
-    .shaded_scene_pass()
-    .draw(
-        &self.scene_pass,
-        &scene.cubes.as_drawable(&self.cube),
-        &(),
-        &draw_params,
-    )?
-    .draw(
-        &self.my_scene_pass,
-        &scene.my_cubes.as_drawable(&self.cube),
-        &my_params,
-        &Default::default(),
-    )?
-    .compose(&scene.lights)?
-    .postprocess()?
-    .present()
-```
-
-# Appendix
 The following diagram shows the paths that are currently possible when drawing a frame:
 ![drawing a frame](/assets/rendology_pipeline.png)
 
