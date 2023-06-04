@@ -60,7 +60,7 @@ ready for general usage yet.
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/qOKUS2cwufg" frameborder="0" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen> </iframe>
 
-# Background
+## Background
 Rendology was split off from my puzzle game project
 [_Ultimate Scale_](https://github.com/leod/ultimate-scale). When I started this project, I wanted
 to focus on the game concept --- certainly, I thought, drawing some plain cubes would more than
@@ -82,7 +82,7 @@ Assumably, there are industry-proven solutions to this problem, but after some d
 up with a somewhat overengineered (and yet hacky) method of successively transforming shaders.
 This method later turned into the core of Rendology.
 
-# Shader Cores and their Transformations
+## Shader Cores and their Transformations
 Rendology defines a `shader::Core<P, I, V>` as consisting of a vertex shader
 `shader::VertexCore<P, I, V>` and a fragment shader `shader::FragmentCore<P>`. The type parameters
 define data that has to be provided from the CPU side when drawing with the shader:
@@ -187,7 +187,7 @@ multiple times. A scene shader needs to be defined only once. Depending on the c
 pipeline, the shader then undergoes various transformations, by which support for shadow mapping, 
 deferred shading and other effects may be added successively.
 
-# Rendering Pipeline
+## Rendering Pipeline
 Rendology's pipeline ensures at compile time that the necessary data for running your scene shader
 is given when drawing. One only needs to implement the `SceneCore` trait for the scene shader.
 For a full example, see
@@ -230,7 +230,7 @@ frame, you will follow a path through the automaton until the result is presente
 The following diagram shows the paths that are currently possible when drawing a frame:
 ![drawing a frame](/assets/rendology_pipeline.png)
 
-# Footnotes
+## Footnotes
 [^1]: Glium's [shadow mapping example](https://github.com/glium/glium/blob/master/examples/shadow_mapping.rs) was of great help in this.
 [^2]: Again, Glium's [deferred shading example](https://github.com/glium/glium/blob/master/examples/deferred.rs) was helpful.
 [^3]: Or something resembling FXAA somewhat, hopefully.
